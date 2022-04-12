@@ -34,6 +34,7 @@ func (t *LevelDb) GetOne(key string) ([]byte, error) {
 }
 
 func (t *LevelDb) HasOne(key string) (bool, error) {
+	defer t.Handler.Close()
 	return t.Handler.Has([]byte(key), nil)
 }
 

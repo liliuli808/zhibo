@@ -14,7 +14,7 @@ type Message struct {
 	Type         string `db:"type"`
 }
 
-func StructInsert(mysqlDb *sql.DB, body string, originalBody string, typeStr string, uuid string, messageTime string) {
+func StructInsert(mysqlDb *sql.DB, body string, originalBody string, typeStr string, uuid string, messageTime string) (int64, error) {
 	parse, _ := time.Parse("20060102150405", messageTime)
 	res, err := mysqlDb.Exec(
 		"insert INTO message(body,original_body,type,uuid,created_at) values(?,?, ? ,?,?)",
@@ -25,10 +25,13 @@ func StructInsert(mysqlDb *sql.DB, body string, originalBody string, typeStr str
 		parse.Format("2006-01-02 15:04:05"),
 	)
 	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println(res.LastInsertId())
+		return 0, err
 	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
 }
 
 func GetNotSendMessage(mysqlDb *sql.DB) *Message {

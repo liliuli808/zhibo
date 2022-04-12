@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
-	"time"
 	"unicode/utf8"
 	"zhibo/kafka"
 	"zhibo/levelDb"
@@ -98,9 +97,8 @@ func (agent *Agent) parasJson(s []byte) {
 		fmt.Println("error:", err)
 	}
 
-	levelD := levelDb.NewLevelDbInstance("./data/" + time.Now().Format("20060102") + "/leveldb")
-	defer levelD.Handler.Close()
 	for _, message := range resp.Data.Messages {
+		levelD := levelDb.NewLevelDbInstance("./data/leveldb")
 		messageType := "anno"
 		originMessageBody := ""
 		if message.OriginalMessage != "" {
@@ -113,15 +111,15 @@ func (agent *Agent) parasJson(s []byte) {
 			originMessageBody = originMessage.Body
 		}
 		if one, _ := levelD.HasOne(message.MessageId); one == true {
-			fmt.Println(message.MessageId, one)
 			continue
 		}
 		levelD.Put(message.MessageId, "true")
-		mysql.StructInsert(agent.Mysql.MysqlDb, trimHtml(message.Body), filterEmoji(trimHtml(originMessageBody)), messageType, message.MessageId, message.MessageTime)
+		levelD.Handler.Close()
+		_, err := mysql.StructInsert(agent.Mysql.MysqlDb, trimHtml(message.Body), filterEmoji(trimHtml(originMessageBody)), messageType, message.MessageId, message.MessageTime)
 		if err != nil {
-			return
+			continue
 		}
-		err := agent.Product.Push(
+		err = agent.Product.Push(
 			agent.Config.KafkaConfig.Topic,
 			kafka.InitMessage(trimHtml(message.Body), filterEmoji(trimHtml(originMessageBody)), messageType, message.MessageId, message.MessageTime).ToJson(),
 		)

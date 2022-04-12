@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Shopify/sarama"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"regexp"
@@ -38,7 +37,6 @@ func (b *Bot) SendMessage(m *sarama.ConsumerMessage, count int) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(message)
 
 	if message.Type == "answer" {
 		resMess = "问：" + message.OriginalBody + "\n答：" + message.Body
@@ -46,7 +44,7 @@ func (b *Bot) SendMessage(m *sarama.ConsumerMessage, count int) {
 		resMess = message.Body
 	}
 
-	str, imageArr := getImagePath(resMess)
+	str, _ := getImagePath(resMess)
 
 	if resMess != "" {
 		body := Body{Id: b.C.QqGroupId, Message: str}
@@ -55,21 +53,21 @@ func (b *Bot) SendMessage(m *sarama.ConsumerMessage, count int) {
 		if err != nil {
 			return
 		}
-		rsp, err := http.Post(b.C.Api, "application/json", bytes.NewReader(marshal))
-		if err != nil {
-			panic(err)
-		}
-		defer func(Body io.ReadCloser) {
-			err := Body.Close()
-			if err != nil {
-
-			}
-		}(rsp.Body)
+		//rsp, err := http.Post(b.C.Api, "application/json", bytes.NewReader(marshal))
+		//if err != nil {
+		//	panic(err)
+		//}
+		//defer func(Body io.ReadCloser) {
+		//	err := Body.Close()
+		//	if err != nil {
+		//
+		//	}
+		//}(rsp.Body)
 	}
 
-	if len(imageArr) != 0 {
-		b.sendImageMessage(imageArr)
-	}
+	//if len(imageArr) != 0 {
+	//	b.sendImageMessage(imageArr)
+	//}
 }
 
 func (b *Bot) sendImageMessage(arr []string) {

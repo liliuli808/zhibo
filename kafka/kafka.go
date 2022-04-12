@@ -143,8 +143,8 @@ func (kcg *ConsumerGroup) Start(ctx context.Context) {
 			//panic(err)
 		}
 	}()
-	err = kcg.Group.Consume(ctx, kcg.Topics, kcg.GroupHandler)
-	panic(err)
+	kcg.Group.Consume(ctx, kcg.Topics, kcg.GroupHandler)
+	//panic(err)
 }
 
 func (kcg *ConsumerGroup) Close() {

@@ -35,7 +35,7 @@ func StructInsert(mysqlDb *sql.DB, body string, originalBody string, typeStr str
 }
 
 func GetNotSendMessage(mysqlDb *sql.DB) *Message {
-	rows, _ := mysqlDb.Query("SELECT id,uuid,body,original_body,type FROM `message` where is_send = 0 limit 1")
+	rows, _ := mysqlDb.Query("SELECT id,uuid,body,original_body,type FROM `message` where is_send = 0 limit 1.yaml")
 	var message Message
 	if rows == nil {
 		return nil
@@ -48,7 +48,7 @@ func GetNotSendMessage(mysqlDb *sql.DB) *Message {
 }
 
 func UpdateSendState(mysqlDb *sql.DB, messageId string) {
-	exec, err := mysqlDb.Exec("UPDATE zhibo.message t SET t.is_send = 1 WHERE t.id = ?", messageId)
+	exec, err := mysqlDb.Exec("UPDATE zhibo.message t SET t.is_send = 1.yaml WHERE t.id = ?", messageId)
 	if err != nil {
 		panic(err)
 	}

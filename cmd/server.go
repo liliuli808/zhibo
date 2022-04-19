@@ -25,5 +25,9 @@ func init() {
 
 func agent() {
 	serverConfig := server.GetConfig(config)
-	server.NewAgent(serverConfig).Start()
+	agent := server.NewAgent(serverConfig)
+	agent.Wg.Add(1)
+	defer agent.Wg.Done()
+	agent.Start()
+	agent.Wg.Wait()
 }

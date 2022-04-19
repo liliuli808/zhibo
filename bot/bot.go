@@ -44,7 +44,7 @@ func (b *Bot) SendMessage(m *sarama.ConsumerMessage, count int) {
 	} else {
 		resMess = message.Body
 	}
-
+	fmt.Println(resMess)
 	str, imageArr := getImagePath(resMess)
 
 	if resMess != "" {
@@ -56,8 +56,14 @@ func (b *Bot) SendMessage(m *sarama.ConsumerMessage, count int) {
 		}
 		rsp, err := http.Post(b.C.Api, "application/json", bytes.NewReader(marshal))
 		if err != nil {
-			panic(err)
+			fmt.Println(err)
+			return
 		}
+		all, err := io.ReadAll(rsp.Body)
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println(string(all))
 		defer func(Body io.ReadCloser) {
 			err := Body.Close()
 			if err != nil {

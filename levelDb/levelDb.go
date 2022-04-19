@@ -34,7 +34,6 @@ func (t *LevelDb) GetOne(key string) ([]byte, error) {
 }
 
 func (t *LevelDb) HasOne(key string) (bool, error) {
-	defer t.Handler.Close()
 	return t.Handler.Has([]byte(key), nil)
 }
 
@@ -51,4 +50,12 @@ func NewLevelDbInstance(DbPath string) *LevelDb {
 	levelDb := LevelDb{DbPath: DbPath}
 	levelDb.Instance()
 	return &levelDb
+}
+
+// Close 关闭连接
+func (t *LevelDb) Close() {
+	err := t.Handler.Close()
+	if err != nil {
+		panic(err)
+	}
 }

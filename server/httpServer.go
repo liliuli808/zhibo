@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"sync"
 	"unicode/utf8"
 	"zhibo/kafka"
 	"zhibo/levelDb"
@@ -55,6 +56,8 @@ type Agent struct {
 	Mysql   *mysql.Mysql
 	Config  *Config
 	Product *kafka.Product
+	Wg      *sync.WaitGroup
+	Db      *levelDb.LevelDb
 }
 
 func NewAgent(config *Config) *Agent {
@@ -64,6 +67,8 @@ func NewAgent(config *Config) *Agent {
 	agent.Config = config
 	agent.Product = &kafka.Product{Config: kafka.Config{Address: config.KafkaConfig.Address}}
 	agent.Product.Instance()
+	agent.Wg = &sync.WaitGroup{}
+	agent.Db = levelDb.NewLevelDbInstance("./data/leveldb")
 	return agent
 }
 
@@ -86,6 +91,7 @@ func (agent *Agent) Start() {
 	}
 
 	defer resp.Body.Close()
+	defer agent.Db.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	agent.parasJson(body)
 }
@@ -96,9 +102,7 @@ func (agent *Agent) parasJson(s []byte) {
 	if err != nil {
 		fmt.Println("error:", err)
 	}
-
 	for _, message := range resp.Data.Messages {
-		levelD := levelDb.NewLevelDbInstance("./data/leveldb")
 		messageType := "anno"
 		originMessageBody := ""
 		if message.OriginalMessage != "" {
@@ -110,15 +114,14 @@ func (agent *Agent) parasJson(s []byte) {
 			messageType = "answer"
 			originMessageBody = originMessage.Body
 		}
-		one, err := levelD.HasOne(message.MessageId)
+		one, err := agent.Db.HasOne(message.MessageId)
 		if one == true {
 			continue
 		}
 		if err != nil {
 			log.Fatal(err)
 		}
-		levelD.Put(message.MessageId, "true")
-		levelD.Handler.Close()
+		agent.Db.Put(message.MessageId, "true")
 		_, err = mysql.StructInsert(agent.Mysql.MysqlDb, trimHtml(message.Body), filterEmoji(trimHtml(originMessageBody)), messageType, message.MessageId, message.MessageTime)
 		if err != nil {
 			continue

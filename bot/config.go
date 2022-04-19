@@ -11,7 +11,7 @@ type Config struct {
 	Topic        string `yaml:"topic"`
 	GroupId      string `yaml:"groupId"`
 	Api          string `yaml:"api"`
-	QqGroupId    int    `yaml:"qqGroupId"`
+	QqGroupId    string `yaml:"qqGroupId"`
 }
 
 func NewConfigWithFile(file string) (*Config, error) {

@@ -1,0 +1,13 @@
+version: "3.5"
+services:
+  cq-http:
+    image: silicer/go-cqhttp
+    restart: always
+    volumes:
+      - ./session.token:/data/session.token
+  dragon_head_server:
+    image: liliuli808/dragon_head:v1.1
+    restart: always
+    volumes:
+      - ./bot.yaml:/usr/src/app/bot.yaml
+    command: zb bot

@@ -7,6 +7,7 @@ import (
 	"github.com/Shopify/sarama"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"zhibo/kafka"
 )
@@ -42,26 +43,20 @@ func (b *Bot) SendMessage(m *sarama.ConsumerMessage, count int) {
 	} else {
 		resMess = message.Body
 	}
-	fmt.Println(resMess)
 	str, imageArr := getImagePath(resMess)
 
 	if resMess != "" {
 		body := Body{Id: b.C.QqGroupId, Message: str}
 		marshal, err := json.Marshal(body)
-		fmt.Println(string(marshal))
 		if err != nil {
 			return
 		}
 		rsp, err := http.Post(b.C.Api, "application/json", bytes.NewReader(marshal))
 		if err != nil {
-			fmt.Println(err)
+			log.Fatal(err)
 			return
 		}
-		all, err := io.ReadAll(rsp.Body)
-		if err != nil {
-			fmt.Println(err)
-		}
-		fmt.Println(string(all))
+
 		defer func(Body io.ReadCloser) {
 			err := Body.Close()
 			if err != nil {
@@ -111,11 +106,11 @@ func getImagePath(messageStr string) (string, []string) {
 			end = append(end, i)
 		}
 	}
-	resStr := ""
+	resStr := messageStr
 	for i, v := range start {
 		res = append(res, messageStr[v:end[i]])
 		if i == 0 {
-			resStr += messageStr[:v-5]
+			resStr = messageStr[:v-5]
 		} else {
 			resStr += messageStr[end[i-1]+6 : v-5]
 		}

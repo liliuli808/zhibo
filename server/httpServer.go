@@ -115,13 +115,17 @@ func (agent *Agent) parasJson(s []byte) {
 			originMessageBody = originMessage.Body
 		}
 		one, err := agent.Db.HasOne(message.MessageId)
+		fmt.Println(one)
 		if one == true {
 			continue
 		}
 		if err != nil {
-			log.Fatal(err)
+			fmt.Println(err)
 		}
-		agent.Db.Put(message.MessageId, "true")
+		err, err2 := agent.Db.Put(message.MessageId, "true")
+		if err != nil {
+			fmt.Println(err, err2)
+		}
 		_, err = mysql.StructInsert(agent.Mysql.MysqlDb, trimHtml(message.Body), filterEmoji(trimHtml(originMessageBody)), messageType, message.MessageId, message.MessageTime)
 		if err != nil {
 			continue

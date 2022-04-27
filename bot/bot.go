@@ -8,8 +8,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"regexp"
-	"strings"
 	"zhibo/kafka"
 )
 
@@ -113,13 +111,15 @@ func getImagePath(messageStr string) (string, []string) {
 			end = append(end, i)
 		}
 	}
-
+	resStr := ""
 	for i, v := range start {
 		res = append(res, messageStr[v:end[i]])
+		if i == 0 {
+			resStr += messageStr[:v-5]
+		} else {
+			resStr += messageStr[end[i-1]+6 : v-5]
+		}
 	}
 
-	re, _ := regexp.Compile("[^\\x00-\\xff]")
-	src := re.FindAllString(messageStr, -1)
-
-	return strings.Join(src, ""), res
+	return resStr, res
 }

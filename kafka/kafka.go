@@ -25,7 +25,7 @@ type Product struct {
 
 func (k *Product) Instance() {
 	config := sarama.NewConfig()
-	config.Producer.RequiredAcks = sarama.WaitForAll              // 发送完数据需要leader和follow都确认
+	config.Producer.RequiredAcks = sarama.WaitForLocal            // 发送完数据需要leader和follow都确认
 	config.Producer.Partitioner = sarama.NewRoundRobinPartitioner // 环形选择分区，在所有分区中循环选择一个
 	config.Producer.Return.Successes = true                       // 成功交付的消息将在success channel返回
 	config.Producer.Compression = CompressionCode                 // 压缩 lz4 兼容线上0.1版本

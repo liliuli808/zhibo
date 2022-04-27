@@ -68,7 +68,6 @@ func NewAgent(config *Config) *Agent {
 	agent.Product = &kafka.Product{Config: kafka.Config{Address: config.KafkaConfig.Address}}
 	agent.Product.Instance()
 	agent.Wg = &sync.WaitGroup{}
-	agent.Db = levelDb.NewLevelDbInstance("./data/leveldb")
 	return agent
 }
 
@@ -91,12 +90,13 @@ func (agent *Agent) Start() {
 	}
 
 	defer resp.Body.Close()
-	defer agent.Db.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	agent.parasJson(body)
 }
 
 func (agent *Agent) parasJson(s []byte) {
+	db := levelDb.NewLevelDbInstance("./data/leveldb")
+	defer db.Close()
 	var resp Response
 	err := json.Unmarshal(s, &resp)
 	if err != nil {
@@ -114,15 +114,15 @@ func (agent *Agent) parasJson(s []byte) {
 			messageType = "answer"
 			originMessageBody = originMessage.Body
 		}
-		one, err := agent.Db.HasOne(message.MessageId)
-		fmt.Println(one)
+		one, err := db.HasOne(message.MessageId)
+
 		if one == true {
 			continue
 		}
 		if err != nil {
 			fmt.Println(err)
 		}
-		err, err2 := agent.Db.Put(message.MessageId, "true")
+		err, err2 := db.Put(message.MessageId, "true")
 		if err != nil {
 			fmt.Println(err, err2)
 		}

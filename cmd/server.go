@@ -13,10 +13,7 @@ func init() {
 		Use:   "server",
 		Short: "server",
 		Run: func(cmd *cobra.Command, args []string) {
-			for {
-				agent()
-				time.Sleep(time.Second * 5)
-			}
+			agent()
 		},
 	}
 	serverCmd.PersistentFlags().StringVar(&config, "config", "./config.yaml", "配置文件地址")
@@ -26,5 +23,8 @@ func init() {
 func agent() {
 	serverConfig := server.GetConfig(config)
 	agent := server.NewAgent(serverConfig)
-	agent.Start()
+	for {
+		agent.Start()
+		time.Sleep(time.Second * 5)
+	}
 }

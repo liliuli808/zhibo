@@ -29,5 +29,5 @@ jobs:
         context: .
         file: ./Dockerfile
         push: true
-        tags: ${{ secrets.DOCKER_HUB_USERNAME }}/dragon_head:latest
+        tags: ${{ secrets.DOCKER_HUB_USER_NAME }}/dragon_head:latest
     

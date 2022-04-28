@@ -15,7 +15,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Login Docker hub
-      run: docker login -u ${{DOCKER.DOCKER_HUB_SECRET}} -p ${{DOCKER.DOCKER_HUB_USER_NAME}}
+      run: docker login -u ${{DOCKER_HUB_SECRET}} -p ${{DOCKER_HUB_USER_NAME}}
     
     - name: Build the Docker image
       run: docker build . --file Dockerfile --tag liliuli808/dragon_head:$(date +%s)

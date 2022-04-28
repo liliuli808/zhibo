@@ -16,21 +16,21 @@ jobs:
     - uses: actions/checkout@v3
 
     - name: Log in to Docker Hub
-            uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+            uses: docker/login-action@v1
             with:
               username: ${{ secrets.DOCKER_HUB_USER_NAME }}
-              password: ${{ secrets.DOCKER_HUB_SECRET }}
+              password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
     - name: Extract metadata (tags, labels) for Docker
-            uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+            uses: uses: docker/setup-buildx-action@v1
             with:
               images: my-docker-hub-namespace/my-docker-hub-repository
 
     - name: Build and push Docker image
-            uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+            uses: docker/build-push-action@v2
             with:
               context: .
+              file: ./Dockerfile
               push: true
-              tags: ${{ steps.meta.outputs.tags }}
-              labels: ${{ steps.meta.outputs.labels }}
+              tags: ${{ secrets.DOCKER_HUB_USERNAME }}/dragon_head:latest
     

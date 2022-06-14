@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Shopify/sarama"
-	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 	"zhibo/kafka"
+	"zhibo/utils"
 )
 
 type Bot struct {
@@ -45,29 +47,30 @@ func (b *Bot) SendMessage(m *sarama.ConsumerMessage, count int) {
 	}
 	str, imageArr := getImagePath(resMess)
 
-	if resMess != "" {
-		body := Body{Id: b.C.QqGroupId, Message: str}
-		marshal, err := json.Marshal(body)
-		if err != nil {
-			return
-		}
-		rsp, err := http.Post(b.C.Api, "application/json", bytes.NewReader(marshal))
-		if err != nil {
-			log.Fatal(err)
-			return
-		}
-
-		defer func(Body io.ReadCloser) {
-			err := Body.Close()
-			if err != nil {
-
-			}
-		}(rsp.Body)
+	if str != "" {
+		b.sendTextMessage(str)
 	}
 
 	if len(imageArr) != 0 {
 		b.sendImageMessage(imageArr)
 	}
+}
+
+func (b *Bot) sendTextMessage(str string) {
+	s := utils.TextToImage(strings.Split(str, "\n"))
+	defer os.Remove(s)
+	filePath, _ := filepath.Abs(s)
+	marshal, err := json.Marshal(ImageBody{Id: b.C.QqGroupId,
+		Message: ImageMessage{Type: "image", Data: ImageData{File: "file://" + filePath}}})
+	if err != nil {
+		return
+	}
+	rsp, err := http.Post(b.C.Api, "application/json", bytes.NewReader(marshal))
+	if err != nil {
+		panic(err)
+	}
+	_, err = ioutil.ReadAll(rsp.Body)
+	_ = rsp.Body.Close()
 }
 
 func (b *Bot) sendImageMessage(arr []string) {
@@ -76,7 +79,6 @@ func (b *Bot) sendImageMessage(arr []string) {
 		if err != nil {
 			return
 		}
-		fmt.Println(string(marshal))
 		rsp, err := http.Post(b.C.Api, "application/json", bytes.NewReader(marshal))
 		if err != nil {
 			panic(err)

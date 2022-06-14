@@ -6,8 +6,11 @@ require (
 	github.com/Shopify/sarama v1.32.0
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gocolly/colly/v2 v2.1.0
+	github.com/gofrs/uuid v4.2.0+incompatible
+	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/spf13/cobra v1.4.0
 	github.com/syndtr/goleveldb v1.0.0
+	golang.org/x/image v0.0.0-20220601225756-64ec528b34cd
 	google.golang.org/protobuf v1.28.0
 	gopkg.in/yaml.v2 v2.4.0
 )

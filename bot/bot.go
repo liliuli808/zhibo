@@ -57,6 +57,7 @@ func (b *Bot) SendMessage(m *sarama.ConsumerMessage, count int) {
 }
 
 func (b *Bot) sendTextMessage(str string) {
+	fmt.Println(str)
 	s := utils.TextToImage(strings.Split(str, "\n"))
 	defer os.Remove(s)
 	filePath, _ := filepath.Abs(s)
@@ -66,11 +67,11 @@ func (b *Bot) sendTextMessage(str string) {
 		return
 	}
 	rsp, err := http.Post(b.C.Api, "application/json", bytes.NewReader(marshal))
+	defer rsp.Body.Close()
 	if err != nil {
 		panic(err)
 	}
 	_, err = ioutil.ReadAll(rsp.Body)
-	_ = rsp.Body.Close()
 }
 
 func (b *Bot) sendImageMessage(arr []string) {
@@ -83,8 +84,7 @@ func (b *Bot) sendImageMessage(arr []string) {
 		if err != nil {
 			panic(err)
 		}
-		body, err := ioutil.ReadAll(rsp.Body)
-		fmt.Println(string(body))
+		_, err = ioutil.ReadAll(rsp.Body)
 		rsp.Body.Close()
 	}
 }

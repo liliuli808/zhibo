@@ -19,7 +19,7 @@ import (
 
 var (
 	dpi      = flag.Float64("dpi", 150, "screen resolution in Dots Per Inch")
-	fontFile = flag.String("fontFile", "./ttl/hua.ttf", "filename of the ttf font")
+	fontFile = flag.String("fontFile", "./hua.ttf", "filename of the ttf font")
 	hinting  = flag.String("hinting", "none", "none | full")
 	size     = flag.Float64("size", 55, "font size in points")
 	spacing  = flag.Float64("spacing", 1.5, "line spacing (e.g. 2 means double spaced)")

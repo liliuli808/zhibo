@@ -3,7 +3,6 @@ package bot
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"github.com/Shopify/sarama"
 	"io/ioutil"
 	"net/http"
@@ -57,7 +56,6 @@ func (b *Bot) SendMessage(m *sarama.ConsumerMessage, count int) {
 }
 
 func (b *Bot) sendTextMessage(str string) {
-	fmt.Println(str)
 	s := utils.TextToImage(strings.Split(str, "\n"))
 	defer os.Remove(s)
 	filePath, _ := filepath.Abs(s)
@@ -67,10 +65,10 @@ func (b *Bot) sendTextMessage(str string) {
 		return
 	}
 	rsp, err := http.Post(b.C.Api, "application/json", bytes.NewReader(marshal))
-	defer rsp.Body.Close()
 	if err != nil {
 		panic(err)
 	}
+	defer rsp.Body.Close()
 	_, err = ioutil.ReadAll(rsp.Body)
 }
 

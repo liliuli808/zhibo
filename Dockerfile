@@ -18,6 +18,7 @@ FROM alpine:latest
 
 COPY --from=builder /usr/src/app/zb /usr/bin/zb
 COPY --from=builder /usr/src/app/hua.ttf /data/hua.ttf
+COPY --from=builder /usr/src/app/images /data/images
 RUN chmod +x /usr/bin/zb
 
 WORKDIR /data

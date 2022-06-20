@@ -17,7 +17,7 @@ RUN set -ex \
 FROM alpine:latest
 
 COPY --from=builder /usr/src/app/zb /usr/bin/zb
-COPY --from=builder /usr/src/app/ttl/hua.ttf /data/hua.ttf
+COPY --from=builder /usr/src/app/hua.ttf /data/hua.ttf
 RUN chmod +x /usr/bin/zb
 
 WORKDIR /data

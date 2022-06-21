@@ -6,7 +6,6 @@ import (
 	"github.com/Shopify/sarama"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 	"zhibo/kafka"
@@ -57,7 +56,7 @@ func (b *Bot) SendMessage(m *sarama.ConsumerMessage, count int) {
 
 func (b *Bot) sendTextMessage(str string) {
 	s := utils.TextToImage(strings.Split(str, "\n"))
-	defer os.Remove(s)
+	//defer os.Remove(s)
 	filePath, _ := filepath.Abs(s)
 	marshal, err := json.Marshal(ImageBody{Id: b.C.QqGroupId,
 		Message: ImageMessage{Type: "image", Data: ImageData{File: "file://" + filePath}}})

@@ -83,7 +83,7 @@ func (agent *Agent) Start() {
 		log.Fatal(err)
 	}
 
-	req.Header.Set("Cookie", string(data))
+	req.Header.Set("Cookie", strings.TrimSpace(string(data)))
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Fatal(err)

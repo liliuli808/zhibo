@@ -35,7 +35,7 @@ func StructInsert(mysqlDb *sql.DB, body string, originalBody string, typeStr str
 }
 
 func GetNotSendMessage(mysqlDb *sql.DB) *Message {
-	rows, _ := mysqlDb.Query("SELECT id,uuid,body,original_body,type FROM `message` where is_send = 0 limit 1.yaml")
+	rows, _ := mysqlDb.Query("SELECT id,uuid,body,original_body,type FROM `message` where is_send = 0 limit 1")
 	var message Message
 	if rows == nil {
 		return nil

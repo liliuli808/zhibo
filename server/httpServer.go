@@ -60,6 +60,70 @@ type Agent struct {
 	Db      *levelDb.LevelDb
 }
 
+type plantBotMessage struct {
+	Succeeded bool `json:"succeeded"`
+	RespData  struct {
+		Topics []struct {
+			TopicId int64 `json:"topic_id"`
+			Group   struct {
+				GroupId int64  `json:"group_id"`
+				Name    string `json:"name"`
+				Type    string `json:"type"`
+			} `json:"group"`
+			Type string `json:"type"`
+			Talk struct {
+				Owner struct {
+					UserId    int64  `json:"user_id"`
+					Name      string `json:"name"`
+					AvatarUrl string `json:"avatar_url"`
+				} `json:"owner"`
+				Text string `json:"text"`
+			} `json:"talk"`
+			ShowComments []struct {
+				CommentId  int64  `json:"comment_id"`
+				CreateTime string `json:"create_time"`
+				Owner      struct {
+					UserId    int64  `json:"user_id"`
+					Name      string `json:"name"`
+					AvatarUrl string `json:"avatar_url"`
+				} `json:"owner"`
+				Text            string `json:"text"`
+				LikesCount      int    `json:"likes_count"`
+				RewardsCount    int    `json:"rewards_count"`
+				Sticky          bool   `json:"sticky"`
+				RepliesCount    int    `json:"replies_count,omitempty"`
+				ParentCommentId int64  `json:"parent_comment_id,omitempty"`
+				Repliee         struct {
+					UserId    int64  `json:"user_id"`
+					Name      string `json:"name"`
+					AvatarUrl string `json:"avatar_url"`
+				} `json:"repliee,omitempty"`
+			} `json:"show_comments,omitempty"`
+			LikesCount    int    `json:"likes_count"`
+			RewardsCount  int    `json:"rewards_count"`
+			CommentsCount int    `json:"comments_count"`
+			ReadingCount  int    `json:"reading_count"`
+			ReadersCount  int    `json:"readers_count"`
+			Digested      bool   `json:"digested"`
+			Sticky        bool   `json:"sticky"`
+			CreateTime    string `json:"create_time"`
+			UserSpecific  struct {
+				Liked      bool `json:"liked"`
+				Subscribed bool `json:"subscribed"`
+			} `json:"user_specific"`
+			LatestLikes []struct {
+				CreateTime string `json:"create_time"`
+				Owner      struct {
+					UserId    int64  `json:"user_id"`
+					Name      string `json:"name"`
+					AvatarUrl string `json:"avatar_url"`
+				} `json:"owner"`
+			} `json:"latest_likes,omitempty"`
+			ModifyTime string `json:"modify_time,omitempty"`
+		} `json:"topics"`
+	} `json:"resp_data"`
+}
+
 func NewAgent(config *Config) *Agent {
 	agent := &Agent{}
 	agent.Mysql = &mysql.Mysql{Config: config.MysqlConfig}
@@ -138,6 +202,33 @@ func (agent *Agent) parasJson(s []byte) {
 			fmt.Println(err)
 		}
 	}
+}
+
+func (agent *Agent) StartSendPlantBot() {
+	data, err := ioutil.ReadFile(agent.Config.ApiConfig.CookiePath)
+	client := &http.Client{}
+	req, err := http.NewRequest("GET",
+		agent.Config.ApiConfig.ApiAddress,
+		nil,
+	)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	req.Header.Set("Cookie", strings.TrimSpace(string(data)))
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	agent.parasJsonPlantBot(body)
+}
+
+func (agent *Agent) parasJsonPlantBot(body []byte) {
+
 }
 
 func trimHtml(src string) string {

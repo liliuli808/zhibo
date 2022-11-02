@@ -14,7 +14,7 @@ func init() {
 			sendPlantBot()
 		},
 	}
-	serverCmd.PersistentFlags().StringVar(&botConfig, "config", "./plantBot.yaml", "配置文件地址")
+	serverCmd.PersistentFlags().StringVar(&botConfig, "config", "./config.yaml", "配置文件地址")
 	rootCmd.AddCommand(serverCmd)
 }
 

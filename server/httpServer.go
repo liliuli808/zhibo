@@ -1,18 +1,23 @@
 package server
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"unicode/utf8"
 	"zhibo/kafka"
 	"zhibo/levelDb"
 	"zhibo/mysql"
+	"zhibo/utils"
 )
 
 type OriginMessage struct {
@@ -60,7 +65,7 @@ type Agent struct {
 	Db      *levelDb.LevelDb
 }
 
-type plantBotMessage struct {
+type plantBotResponse struct {
 	Succeeded bool `json:"succeeded"`
 	RespData  struct {
 		Topics []struct {
@@ -126,11 +131,7 @@ type plantBotMessage struct {
 
 func NewAgent(config *Config) *Agent {
 	agent := &Agent{}
-	agent.Mysql = &mysql.Mysql{Config: config.MysqlConfig}
-	agent.Mysql.Init()
 	agent.Config = config
-	agent.Product = &kafka.Product{Config: kafka.Config{Address: config.KafkaConfig.Address}}
-	agent.Product.Instance()
 	agent.Wg = &sync.WaitGroup{}
 	return agent
 }
@@ -227,8 +228,64 @@ func (agent *Agent) StartSendPlantBot() {
 	agent.parasJsonPlantBot(body)
 }
 
-func (agent *Agent) parasJsonPlantBot(body []byte) {
+func (agent *Agent) parasJsonPlantBot(s []byte) {
+	db := levelDb.NewLevelDbInstance("./data/leveldb")
+	defer db.Close()
+	var resp plantBotResponse
+	err := json.Unmarshal(s, &resp)
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+	for _, message := range resp.RespData.Topics {
 
+		hasTalk, err := db.HasOne("talkId" + strconv.FormatInt(message.TopicId, 10))
+
+		if err != nil {
+			fmt.Println(err)
+		}
+		var commentArr []string
+		commentArr = append(commentArr, message.Talk.Text)
+		var hasComment bool
+
+		for _, comment := range message.ShowComments {
+			commentArr = append(commentArr, "评论"+comment.Text)
+			hasComment, err = db.HasOne("commentId" + strconv.FormatInt(comment.CommentId, 10))
+			if err != nil {
+				fmt.Println(err)
+			}
+			if !hasComment {
+				db.Put("commentId"+strconv.FormatInt(comment.CommentId, 10), "1")
+			}
+		}
+
+		if !hasTalk {
+			db.Put("talkId"+strconv.FormatInt(message.TopicId, 10), "1")
+		}
+
+		if !hasTalk && !hasComment {
+			s := utils.TextToImage(commentArr)
+			abs, err := filepath.Abs(s)
+			if err != nil {
+				return
+			}
+		}
+	}
+}
+
+func (agent *Agent) sendTextMessage(filePath string, path string) {
+	defer os.Remove(path)
+
+	marshal, err := json.Marshal(ImageBody{Id: b.C.QqGroupId,
+		Message: ImageMessage{Type: "image", Data: ImageData{File: "file://" + filePath}}})
+	if err != nil {
+		return
+	}
+	rsp, err := http.Post(b.C.Api, "application/json", bytes.NewReader(marshal))
+	if err != nil {
+		panic(err)
+	}
+	defer rsp.Body.Close()
+	_, err = ioutil.ReadAll(rsp.Body)
 }
 
 func trimHtml(src string) string {

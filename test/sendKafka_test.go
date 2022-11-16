@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 	"zhibo/kafka"
 )
 
@@ -22,7 +23,8 @@ func TestSendKafka1(t *testing.T) {
 }
 
 func TestMakeStr(t *testing.T) {
-	fmt.Println(makeStr(strings.Split(text, "\n")))
+	ti, _ := time.Parse("2006-01-02T15:04:05.000+0800", "2022-11-04T14:07:15.435+0800")
+	fmt.Println(ti.Format("2006-01-02 15:04"))
 }
 
 func makeStr(str []string) []string {

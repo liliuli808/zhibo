@@ -22,5 +22,3 @@ COPY --from=builder /usr/src/app/images /data/images
 RUN chmod +x /usr/bin/zb
 
 WORKDIR /data
-
-CMD [ "/usr/bin/zb", "bot"]

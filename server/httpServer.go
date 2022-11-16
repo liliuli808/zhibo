@@ -7,12 +7,12 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 	"unicode/utf8"
 	"zhibo/kafka"
 	"zhibo/levelDb"
@@ -82,28 +82,28 @@ type plantBotResponse struct {
 					Name      string `json:"name"`
 					AvatarUrl string `json:"avatar_url"`
 				} `json:"owner"`
-				Text string `json:"text"`
+				Text   string `json:"text"`
+				Images []struct {
+					ImageId   int64  `json:"image_id"`
+					Type      string `json:"type"`
+					Thumbnail struct {
+						Url    string `json:"url"`
+						Width  int    `json:"width"`
+						Height int    `json:"height"`
+					} `json:"thumbnail"`
+					Large struct {
+						Url    string `json:"url"`
+						Width  int    `json:"width"`
+						Height int    `json:"height"`
+					} `json:"large"`
+					Original struct {
+						Url    string `json:"url"`
+						Width  int    `json:"width"`
+						Height int    `json:"height"`
+						Size   int    `json:"size"`
+					} `json:"original,omitempty"`
+				} `json:"images,omitempty"`
 			} `json:"talk"`
-			ShowComments []struct {
-				CommentId  int64  `json:"comment_id"`
-				CreateTime string `json:"create_time"`
-				Owner      struct {
-					UserId    int64  `json:"user_id"`
-					Name      string `json:"name"`
-					AvatarUrl string `json:"avatar_url"`
-				} `json:"owner"`
-				Text            string `json:"text"`
-				LikesCount      int    `json:"likes_count"`
-				RewardsCount    int    `json:"rewards_count"`
-				Sticky          bool   `json:"sticky"`
-				RepliesCount    int    `json:"replies_count,omitempty"`
-				ParentCommentId int64  `json:"parent_comment_id,omitempty"`
-				Repliee         struct {
-					UserId    int64  `json:"user_id"`
-					Name      string `json:"name"`
-					AvatarUrl string `json:"avatar_url"`
-				} `json:"repliee,omitempty"`
-			} `json:"show_comments,omitempty"`
 			LikesCount    int    `json:"likes_count"`
 			RewardsCount  int    `json:"rewards_count"`
 			CommentsCount int    `json:"comments_count"`
@@ -124,7 +124,26 @@ type plantBotResponse struct {
 					AvatarUrl string `json:"avatar_url"`
 				} `json:"owner"`
 			} `json:"latest_likes,omitempty"`
-			ModifyTime string `json:"modify_time,omitempty"`
+			ShowComments []struct {
+				CommentId  int64  `json:"comment_id"`
+				CreateTime string `json:"create_time"`
+				Owner      struct {
+					UserId    int64  `json:"user_id"`
+					Name      string `json:"name"`
+					AvatarUrl string `json:"avatar_url"`
+				} `json:"owner"`
+				Text            string `json:"text"`
+				LikesCount      int    `json:"likes_count"`
+				RewardsCount    int    `json:"rewards_count"`
+				Sticky          bool   `json:"sticky"`
+				RepliesCount    int    `json:"replies_count,omitempty"`
+				ParentCommentId int64  `json:"parent_comment_id,omitempty"`
+				Repliee         struct {
+					UserId    int64  `json:"user_id"`
+					Name      string `json:"name"`
+					AvatarUrl string `json:"avatar_url"`
+				} `json:"repliee,omitempty"`
+			} `json:"show_comments,omitempty"`
 		} `json:"topics"`
 	} `json:"resp_data"`
 }
@@ -244,11 +263,21 @@ func (agent *Agent) parasJsonPlantBot(s []byte) {
 			fmt.Println(err)
 		}
 		var commentArr []string
+
+		if message.Talk.Text == "" {
+			continue
+		}
+
+		ti, _ := time.Parse("2006-01-02T15:04:05.000+0800", message.CreateTime)
+		commentArr = append(commentArr, ti.Format("2006-01-02 15:04"))
 		commentArr = append(commentArr, message.Talk.Text)
 		var hasComment bool
 
 		for _, comment := range message.ShowComments {
-			commentArr = append(commentArr, "评论"+comment.Text)
+			if comment.Text == "" {
+				continue
+			}
+			commentArr = append(commentArr, "评论: "+comment.Text)
 			hasComment, err = db.HasOne("commentId" + strconv.FormatInt(comment.CommentId, 10))
 			if err != nil {
 				fmt.Println(err)
@@ -256,6 +285,7 @@ func (agent *Agent) parasJsonPlantBot(s []byte) {
 			if !hasComment {
 				db.Put("commentId"+strconv.FormatInt(comment.CommentId, 10), "1")
 			}
+
 		}
 
 		if !hasTalk {
@@ -268,24 +298,47 @@ func (agent *Agent) parasJsonPlantBot(s []byte) {
 			if err != nil {
 				return
 			}
+			marshal, err := json.Marshal(ImageBody{Id: "703653853",
+				Message: ImageMessage{Type: "image", Data: ImageData{File: "file://" + abs}}})
+			if err != nil {
+				return
+			}
+
+			rsp, err := http.Post("http://127.0.0.1:5700/send_group_msg", "application/json", bytes.NewReader(marshal))
+			if err != nil {
+				panic(err)
+			}
+			defer rsp.Body.Close()
+			ioutil.ReadAll(rsp.Body)
+
+			if len(message.Talk.Images) > 0 {
+				for _, image := range message.Talk.Images {
+					marshal, err := json.Marshal(ImageBody{Id: "703653853",
+						Message: ImageMessage{Type: "image", Data: ImageData{File: image.Large.Url}}})
+					rsp, err := http.Post("http://127.0.0.1:5700/send_group_msg", "application/json", bytes.NewReader(marshal))
+					if err != nil {
+						panic(err)
+					}
+					defer rsp.Body.Close()
+				}
+			}
 		}
+
 	}
 }
 
-func (agent *Agent) sendTextMessage(filePath string, path string) {
-	defer os.Remove(path)
+type ImageMessage struct {
+	Type string    `json:"type"`
+	Data ImageData `json:"data"`
+}
 
-	marshal, err := json.Marshal(ImageBody{Id: b.C.QqGroupId,
-		Message: ImageMessage{Type: "image", Data: ImageData{File: "file://" + filePath}}})
-	if err != nil {
-		return
-	}
-	rsp, err := http.Post(b.C.Api, "application/json", bytes.NewReader(marshal))
-	if err != nil {
-		panic(err)
-	}
-	defer rsp.Body.Close()
-	_, err = ioutil.ReadAll(rsp.Body)
+type ImageBody struct {
+	Id      string       `json:"group_id"`
+	Message ImageMessage `json:"message"`
+}
+
+type ImageData struct {
+	File string `json:"file"`
 }
 
 func trimHtml(src string) string {

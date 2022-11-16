@@ -6,6 +6,8 @@ import (
 	"zhibo/server"
 )
 
+var plantConfig string
+
 func init() {
 	var serverCmd = &cobra.Command{
 		Use:   "plantBot",
@@ -14,12 +16,12 @@ func init() {
 			sendPlantBot()
 		},
 	}
-	serverCmd.PersistentFlags().StringVar(&botConfig, "config", "./config.yaml", "配置文件地址")
+	serverCmd.PersistentFlags().StringVar(&plantConfig, "config", "./config.yaml", "配置文件地址")
 	rootCmd.AddCommand(serverCmd)
 }
 
 func sendPlantBot() {
-	serverConfig := server.GetConfig(config)
+	serverConfig := server.GetConfig(plantConfig)
 	agent := server.NewAgent(serverConfig)
 	for {
 		agent.StartSendPlantBot()

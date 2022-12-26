@@ -237,6 +237,10 @@ func (agent *Agent) StartSendPlantBot() {
 	}
 
 	req.Header.Set("Cookie", strings.TrimSpace(string(data)))
+	req.Header.Set("authority", "api.zsxq.com")
+	req.Header.Set("accept", "application/json, text/plain, */*")
+	req.Header.Set("origin", "https://wx.zsxq.com")
+	req.Header.Set("referer", "https://wx.zsxq.com/")
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Fatal(err)

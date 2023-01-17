@@ -281,23 +281,21 @@ func (agent *Agent) parasJsonPlantBot(s []byte) {
 			if comment.Text == "" {
 				continue
 			}
-			commentArr = append(commentArr, "评论: "+comment.Text)
+			var resArr []string
+			resArr = append(resArr, ti.Format("2006-01-02 15:04"))
+			resArr = append(resArr, message.Talk.Text)
+			resArr = append(resArr, "评论: "+comment.Text)
+
 			hasComment, err = db.HasOne("commentId" + strconv.FormatInt(comment.CommentId, 10))
 			if err != nil {
 				fmt.Println(err)
 			}
-			if !hasComment {
-				db.Put("commentId"+strconv.FormatInt(comment.CommentId, 10), "1")
+			if hasComment {
+				continue
 			}
 
-		}
-
-		if !hasTalk {
-			db.Put("talkId"+strconv.FormatInt(message.TopicId, 10), "1")
-		}
-
-		if !hasTalk && !hasComment {
-			s := utils.TextToImage(commentArr)
+			db.Put("commentId"+strconv.FormatInt(comment.CommentId, 10), "1")
+			s := utils.TextToImage(resArr)
 			abs, err := filepath.Abs(s)
 			if err != nil {
 				return
@@ -312,19 +310,42 @@ func (agent *Agent) parasJsonPlantBot(s []byte) {
 			if err != nil {
 				panic(err)
 			}
-			defer rsp.Body.Close()
+			rsp.Body.Close()
 			ioutil.ReadAll(rsp.Body)
+		}
 
-			if len(message.Talk.Images) > 0 {
-				for _, image := range message.Talk.Images {
-					marshal, err := json.Marshal(ImageBody{Id: "703653853",
-						Message: ImageMessage{Type: "image", Data: ImageData{File: image.Large.Url}}})
-					rsp, err := http.Post("http://127.0.0.1:5700/send_group_msg", "application/json", bytes.NewReader(marshal))
-					if err != nil {
-						panic(err)
-					}
-					defer rsp.Body.Close()
+		if hasTalk {
+			continue
+		}
+
+		db.Put("talkId"+strconv.FormatInt(message.TopicId, 10), "1")
+		s := utils.TextToImage(commentArr)
+		abs, err := filepath.Abs(s)
+		if err != nil {
+			return
+		}
+		marshal, err := json.Marshal(ImageBody{Id: "703653853",
+			Message: ImageMessage{Type: "image", Data: ImageData{File: "file://" + abs}}})
+		if err != nil {
+			return
+		}
+
+		rsp, err := http.Post("http://127.0.0.1:5700/send_group_msg", "application/json", bytes.NewReader(marshal))
+		if err != nil {
+			panic(err)
+		}
+		rsp.Body.Close()
+		ioutil.ReadAll(rsp.Body)
+
+		if len(message.Talk.Images) > 0 {
+			for _, image := range message.Talk.Images {
+				marshal, err := json.Marshal(ImageBody{Id: "703653853",
+					Message: ImageMessage{Type: "image", Data: ImageData{File: image.Large.Url}}})
+				rsp, err := http.Post("http://127.0.0.1:5700/send_group_msg", "application/json", bytes.NewReader(marshal))
+				if err != nil {
+					panic(err)
 				}
+				rsp.Body.Close()
 			}
 		}
 

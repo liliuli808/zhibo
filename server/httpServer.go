@@ -7,13 +7,14 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 	"unicode/utf8"
+	"zhibo/bot"
 	"zhibo/kafka"
 	"zhibo/levelDb"
 	"zhibo/mysql"
@@ -58,11 +59,10 @@ type Message struct {
 }
 
 type Agent struct {
-	Mysql   *mysql.Mysql
-	Config  *Config
-	Product *kafka.Product
-	Wg      *sync.WaitGroup
-	Db      *levelDb.LevelDb
+	Mysql  *mysql.Mysql
+	Config *Config
+	Db     *levelDb.LevelDb
+	Bot    *bot.Bot
 }
 
 type plantBotResponse struct {
@@ -151,7 +151,7 @@ type plantBotResponse struct {
 func NewAgent(config *Config) *Agent {
 	agent := &Agent{}
 	agent.Config = config
-	agent.Wg = &sync.WaitGroup{}
+	agent.Mysql.Init()
 	return agent
 }
 
@@ -175,6 +175,9 @@ func (agent *Agent) Start() {
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Println(err)
+	}
 	agent.parasJson(body)
 }
 
@@ -184,7 +187,7 @@ func (agent *Agent) parasJson(s []byte) {
 	var resp Response
 	err := json.Unmarshal(s, &resp)
 	if err != nil {
-		fmt.Println("error:", err)
+		log.Println("error:", err)
 	}
 	for _, message := range resp.Data.Messages {
 		messageType := "anno"
@@ -207,19 +210,31 @@ func (agent *Agent) parasJson(s []byte) {
 			fmt.Println(err)
 		}
 		err, err2 := db.Put(message.MessageId, "true")
-		if err != nil {
-			fmt.Println(err, err2)
+		if err != nil || err2 != nil {
+			log.Println(err, err2)
 		}
 		_, err = mysql.StructInsert(agent.Mysql.MysqlDb, trimHtml(message.Body), filterEmoji(trimHtml(originMessageBody)), messageType, message.MessageId, message.MessageTime)
 		if err != nil {
-			continue
+			log.Println(err)
 		}
-		err = agent.Product.Push(
-			agent.Config.KafkaConfig.Topic,
-			kafka.InitMessage(trimHtml(message.Body), filterEmoji(trimHtml(originMessageBody)), messageType, message.MessageId, message.MessageTime).ToJson(),
-		)
+		message := kafka.InitMessage(trimHtml(message.Body), filterEmoji(trimHtml(originMessageBody)), messageType, message.MessageId, message.MessageTime)
+		var resMess string
 		if err != nil {
-			fmt.Println(err)
+			panic(err)
+		}
+		if message.Type == "answer" {
+			resMess = "问：" + message.OriginalBody + "\n答：" + message.Body
+		} else {
+			resMess = message.Body
+		}
+		str, imageArr := getImagePath(resMess)
+
+		if str != "" {
+			agent.sendTextMessage(str)
+		}
+
+		if len(imageArr) != 0 {
+			agent.sendImageMessage(imageArr)
 		}
 	}
 }
@@ -397,4 +412,68 @@ func filterEmoji(content string) string {
 		}
 	}
 	return newContent
+}
+
+func (agent *Agent) sendTextMessage(str string) {
+	s := utils.TextToImage(strings.Split(str, "\n"))
+	defer os.Remove(s)
+	filePath, _ := filepath.Abs(s)
+	marshal, err := json.Marshal(ImageBody{Id: agent.Config.QqGroupId,
+		Message: ImageMessage{Type: "image", Data: ImageData{File: "file://" + filePath}}})
+	if err != nil {
+		return
+	}
+	rsp, err := http.Post(agent.Config.Api, "application/json", bytes.NewReader(marshal))
+	if err != nil {
+		panic(err)
+	}
+	defer rsp.Body.Close()
+	_, err = ioutil.ReadAll(rsp.Body)
+}
+
+func (agent *Agent) sendImageMessage(arr []string) {
+	for _, s := range arr {
+		marshal, err := json.Marshal(ImageBody{Id: agent.Config.QqGroupId, Message: ImageMessage{Type: "image", Data: ImageData{File: s}}})
+		if err != nil {
+			return
+		}
+		rsp, err := http.Post(agent.Config.Api, "application/json", bytes.NewReader(marshal))
+		if err != nil {
+			panic(err)
+		}
+		_, err = ioutil.ReadAll(rsp.Body)
+		rsp.Body.Close()
+	}
+}
+
+func getImagePath(messageStr string) (string, []string) {
+	var start []int
+	var end []int
+	var res []string
+	for i, _ := range messageStr {
+		if i+5 > len(messageStr) {
+			continue
+		}
+		if i+6 > len(messageStr) {
+			continue
+		}
+
+		if messageStr[i:i+5] == "[img]" {
+			start = append(start, i+5)
+		}
+		if messageStr[i:i+6] == "[/img]" {
+			end = append(end, i)
+		}
+	}
+	resStr := messageStr
+	for i, v := range start {
+		res = append(res, messageStr[v:end[i]])
+		if i == 0 {
+			resStr = messageStr[:v-5]
+		} else {
+			resStr += messageStr[end[i-1]+6 : v-5]
+		}
+	}
+
+	return resStr, res
 }

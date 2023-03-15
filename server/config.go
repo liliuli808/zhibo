@@ -17,6 +17,8 @@ type Config struct {
 	MysqlConfig *mysql.Config `yaml:"mysql"`
 	KafkaConfig *kafka.Config `yaml:"kafka"`
 	ApiConfig   *ApiConfig    `yaml:"apiConfig"`
+	Api         string        `yaml:"api"`
+	QqGroupId   string        `yaml:"qqGroupId"`
 }
 
 func GetConfig(path string) *Config {

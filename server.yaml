@@ -1,0 +1,15 @@
+mysql:
+  userName: root
+  passWord: password
+  host: 150.158.213.112
+  port: 33062
+  database: zhibo
+  charset: utf8mb4
+kafka:
+  topic: group-1
+  address: kafka:9092
+apiConfig:
+  apiAddress: https://gw.homeway.com.cn/zhibo/api/room/get_teacher_messages_sort?roomId=11605&date=&sort=&_=1656038025923
+  cookiePath: ./cookie
+api       : "http://127.0.0.1:5700/send_group_msg"
+qqGroupId : 752365126

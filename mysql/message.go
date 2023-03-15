@@ -3,6 +3,7 @@ package mysql
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
 )
 
@@ -25,11 +26,11 @@ func StructInsert(mysqlDb *sql.DB, body string, originalBody string, typeStr str
 		parse.Format("2006-01-02 15:04:05"),
 	)
 	if err != nil {
-		return 0, err
+		log.Println(err)
 	}
 	id, err := res.LastInsertId()
 	if err != nil {
-		return 0, err
+		log.Println(err)
 	}
 	return id, nil
 }

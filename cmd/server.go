@@ -16,7 +16,7 @@ func init() {
 			agent()
 		},
 	}
-	serverCmd.PersistentFlags().StringVar(&config, "config", "./config.yaml", "配置文件地址")
+	serverCmd.PersistentFlags().StringVar(&config, "config", "./server.yaml", "配置文件地址")
 	rootCmd.AddCommand(serverCmd)
 }
 

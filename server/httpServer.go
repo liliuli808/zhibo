@@ -151,6 +151,7 @@ type plantBotResponse struct {
 func NewAgent(config *Config) *Agent {
 	agent := &Agent{}
 	agent.Config = config
+	agent.Mysql = &mysql.Mysql{Config: agent.Config.MysqlConfig}
 	agent.Mysql.Init()
 	return agent
 }
@@ -199,7 +200,7 @@ func (agent *Agent) parasJson(s []byte) {
 				log.Fatal(err)
 			}
 			messageType = "answer"
-			originMessageBody = originMessage.Body
+			originMessageBody = message.NickName + ":" + originMessage.Body
 		}
 		one, err := db.HasOne(message.MessageId)
 
@@ -217,15 +218,15 @@ func (agent *Agent) parasJson(s []byte) {
 		if err != nil {
 			log.Println(err)
 		}
-		message := kafka.InitMessage(trimHtml(message.Body), filterEmoji(trimHtml(originMessageBody)), messageType, message.MessageId, message.MessageTime)
+		message := kafka.InitMessage(message.NickName, trimHtml(message.Body), filterEmoji(trimHtml(originMessageBody)), messageType, message.MessageId, message.MessageTime)
 		var resMess string
 		if err != nil {
 			panic(err)
 		}
 		if message.Type == "answer" {
-			resMess = "问：" + message.OriginalBody + "\n答：" + message.Body
+			resMess = "问：" + message.OriginalBody + "\n答：" + message.NickName + message.Body
 		} else {
-			resMess = message.Body
+			resMess = message.NickName + ":" + message.Body
 		}
 		str, imageArr := getImagePath(resMess)
 

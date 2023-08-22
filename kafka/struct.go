@@ -7,15 +7,17 @@ import (
 type Message struct {
 	OriginalBody string `json:"OriginalBody"`
 	MessageTime  string `json:"messageTime"`
+	NickName     string `json:"nickName"`
 	Type         string `json:"type"`
 	Body         string `json:"Body"`
 	Uuid         string `json:"uuid"`
 }
 
-func InitMessage(message string, originMessageBody string, messageType string, MessageId string, MessageTime string) *Message {
+func InitMessage(nickName string, message string, originMessageBody string, messageType string, MessageId string, MessageTime string) *Message {
 	return &Message{
 		originMessageBody,
 		MessageTime,
+		nickName,
 		messageType,
 		message,
 		MessageId,
